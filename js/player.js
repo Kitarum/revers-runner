@@ -77,4 +77,3 @@ export class Player {
     ctx.lineTo(this.x + 14, footY + legSwing);
     ctx.stroke();
   }
-}
