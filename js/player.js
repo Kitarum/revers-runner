@@ -1,38 +1,35 @@
+// js/player.js
 export class Player {
   constructor(x, groundY) {
+    this.baseX = x;          // якорь по X (раннер)
     this.x = x;
     this.groundY = groundY;
 
-    this.speed = 220;
-    this.direction = 1;
     this.animationTime = 0;
 
-    // размеры для коллизий/отладки
+    // размеры
     this.headRadius = 15;
     this.bodyLen = 35;
     this.legLen = 28;
   }
 
+  setGround(groundY) {
+    this.groundY = groundY;
+  }
+
   update(dt, canvasWidth, groundY) {
     this.groundY = groundY;
 
-    this.x += this.speed * this.direction * dt;
+    // держим игрока в фиксированной позиции,
+    // но слегка “дышим”, чтобы не выглядело как статуя
+    const breathe = Math.sin(this.animationTime * 0.6) * 1.5;
+    this.x = Math.max(30, Math.min(canvasWidth - 30, this.baseX + breathe));
 
-    // отражаемся от краёв CANVAS, не окна
-    const margin = 30;
-    if (this.x > canvasWidth - margin) {
-      this.x = canvasWidth - margin;
-      this.direction = -1;
-    } else if (this.x < margin) {
-      this.x = margin;
-      this.direction = 1;
-    }
-
+    // скорость анимации ног/рук
     this.animationTime += dt * 10;
   }
 
   draw(ctx) {
-    // Точка “ступни” персонажа — на земле
     const footY = this.groundY;
     const hipY = footY - this.legLen;
     const bodyTopY = hipY - this.bodyLen;
@@ -44,10 +41,6 @@ export class Player {
     ctx.strokeStyle = "white";
     ctx.lineWidth = 5;
     ctx.lineCap = "round";
-
-    // (DEBUG) маленькая точка, чтобы точно видеть, где он
-    ctx.fillStyle = "yellow";
-    ctx.fillRect(this.x - 2, footY - 2, 4, 4);
 
     // Голова
     ctx.beginPath();
@@ -69,7 +62,7 @@ export class Player {
     ctx.lineTo(this.x + 18, shoulderY - armSwing);
     ctx.stroke();
 
-    // Ноги
+    // Ноги (бег)
     ctx.beginPath();
     ctx.moveTo(this.x, hipY);
     ctx.lineTo(this.x - 14, footY - legSwing);
@@ -77,3 +70,4 @@ export class Player {
     ctx.lineTo(this.x + 14, footY + legSwing);
     ctx.stroke();
   }
+}
