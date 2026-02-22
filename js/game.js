@@ -1,12 +1,8 @@
-import { Player } from './player.js';
-import { Item } from './item.js';
-import { Input } from './input.js';
-
-export class Game {
-    constructor(canvas, ctx) {
-        import { Player } from './player.js';
-import { Item } from './item.js';
-import { Input } from './input.js';
+// js/game.js
+import { Player } from "./player.js";
+import { Item } from "./item.js";
+import { Input } from "./input.js";
+import { Background } from "./background.js";
 
 export class Game {
   constructor(canvas, ctx) {
@@ -14,83 +10,77 @@ export class Game {
     this.ctx = ctx;
 
     this.input = new Input();
+    this.bg = new Background();
 
-    // Земля (линия дороги)
-    this.groundHeight = 100;
+    // Мировая скорость "бега вперёд" (фон едет назад)
+    this.worldSpeed = 260;
+
+    // Земля (дорога)
+    this.groundHeight = 140;
     this.groundY = this.canvas.height - this.groundHeight;
 
-    // Старт по центру, чтобы точно видел
-    this.player = new Player(this.canvas.width * 0.2, this.groundY);
+    // Игрок держится примерно в одном месте (раннер)
+    this.player = new Player(this.canvas.width * 0.22, this.groundY);
 
     this.items = [];
     this.spawnTimer = 0;
-    this.spawnInterval = 2;
+    this.spawnInterval = 1.25;
+  }
+
+  onResize() {
+    this.groundY = this.canvas.height - this.groundHeight;
+    this.player.setGround(this.groundY);
   }
 
   update(dt) {
-    // если вдруг dt огромный (первый кадр/сворачивал окно) — ограничим
+    // защита от огромного dt (сворачивание, лаги)
     dt = Math.min(dt, 0.033);
 
-    // на случай изменения размеров canvas
+    // пересчёт земли (на всякий, если размеры поменялись)
     this.groundY = this.canvas.height - this.groundHeight;
 
+    // фон скроллится — создаём “ощущение бега”
+    this.bg.update(dt, this.worldSpeed);
+
+    // игрок “бежит”, но не путешествует по X как камера
     this.player.update(dt, this.canvas.width, this.groundY);
 
+    // спавн предметов
     this.spawnTimer += dt;
     if (this.spawnTimer >= this.spawnInterval) {
       this.spawnItem();
       this.spawnTimer = 0;
     }
 
-    this.items.forEach(item => item.update(dt, this.input));
-    this.items = this.items.filter(item => !item.offscreen);
+    // предметы падают + управляются
+    for (const item of this.items) {
+      item.update(dt, this.input, this.canvas.width, this.canvas.height, this.groundY);
+    }
+
+    this.items = this.items.filter((item) => !item.offscreen);
   }
 
   draw() {
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    const w = this.canvas.width;
+    const h = this.canvas.height;
 
-    // Дорога
-    this.ctx.fillStyle = "#444";
-    this.ctx.fillRect(0, this.groundY, this.canvas.width, this.groundHeight);
+    this.ctx.clearRect(0, 0, w, h);
 
+    // фон + деревья
+    this.bg.draw(this.ctx, w, h, this.groundY);
+
+    // дорога + “текстура/разметка”
+    this.bg.drawRoad(this.ctx, w, h, this.groundY);
+
+    // игрок и предметы
     this.player.draw(this.ctx);
-
-    this.items.forEach(item => item.draw(this.ctx));
+    for (const item of this.items) item.draw(this.ctx);
   }
 
   spawnItem() {
-    const x = Math.random() * this.canvas.width;
-    this.items.push(new Item(x, 0));
+    // спавним сверху в пределах canvas
+    const margin = 40;
+    const x = margin + Math.random() * (this.canvas.width - margin * 2);
+    this.items.push(new Item(x, -40));
   }
-}
-
-    update(dt) {
-        this.player.update(dt);
-
-        this.spawnTimer += dt;
-        if (this.spawnTimer >= this.spawnInterval) {
-            this.spawnItem();
-            this.spawnTimer = 0;
-        }
-
-        this.items.forEach(item => item.update(dt, this.input));
-        this.items = this.items.filter(item => !item.offscreen);
-    }
-
-    draw() {
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
-        // Draw ground
-        this.ctx.fillStyle = "#444";
-        this.ctx.fillRect(0, this.canvas.height - 100, this.canvas.width, 100);
-
-        this.player.draw(this.ctx);
-
-        this.items.forEach(item => item.draw(this.ctx));
-    }
-
-    spawnItem() {
-        const x = Math.random() * this.canvas.width;
-        this.items.push(new Item(x, 0));
-    }
 }
