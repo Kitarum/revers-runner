@@ -16,4 +16,3 @@ export class Input {
             if (e.key === 's') this.down = false;
         });
     }
-}
