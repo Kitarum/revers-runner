@@ -23,4 +23,3 @@ export class Item {
         ctx.fillStyle = "red";
         ctx.fillRect(this.x - this.size / 2, this.y, this.size, this.size);
     }
-}
